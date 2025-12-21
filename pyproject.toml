@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bootcamp-data"
+version = "0.1.0"
+description = "Bootcamp data processing project"
+requires-python = ">=3.11"
+authors = [
+    {name = "Developer", email = "dev@example.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "black>=23.0",
+    "flake8>=6.0",
+]
+
+[tool.setuptools]
+packages = ["src"]
