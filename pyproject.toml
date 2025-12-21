@@ -21,4 +21,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["src"]
+packages = ["bootcamp_data"]
+
+[tool.setuptools.package-dir]
+"" = "src"
