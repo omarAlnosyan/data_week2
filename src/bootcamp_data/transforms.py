@@ -84,3 +84,39 @@ def clean_orders(df: pd.DataFrame) -> pd.DataFrame:
     df = standardize_status(df)
     df = remove_duplicates(df)
     return df
+
+
+def missingness_report(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Generate missingness report for all columns
+    
+    Args:
+        df: DataFrame to analyze
+        
+    Returns:
+        DataFrame with n_missing and p_missing columns, sorted by p_missing
+    """
+    return (
+        df.isna().sum()
+        .rename("n_missing")
+        .to_frame()
+        .assign(p_missing=lambda t: t["n_missing"] / len(df))
+        .sort_values("p_missing", ascending=False)
+    )
+
+
+def add_missing_flags(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    """
+    Add boolean flag columns for missing values
+    
+    Args:
+        df: DataFrame to transform
+        cols: List of column names to flag
+        
+    Returns:
+        DataFrame with additional __isna columns
+    """
+    out = df.copy()
+    for c in cols:
+        out[f"{c}__isna"] = out[c].isna()
+    return out

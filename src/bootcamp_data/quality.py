@@ -1,90 +1,72 @@
 """
-Data quality checks for bootcamp data
+Lightweight data quality checks using assertions
 """
 
 import pandas as pd
-from pathlib import Path
-from typing import Dict, List, Tuple
 
 
-def check_missing_values(df: pd.DataFrame) -> Dict[str, int]:
+def require_columns(df: pd.DataFrame, cols: list[str]) -> None:
     """
-    Check for missing values in dataframe
+    Assert that all required columns exist in dataframe
     
     Args:
         df: DataFrame to check
+        cols: List of required column names
         
-    Returns:
-        Dictionary with column names and missing value counts
+    Raises:
+        AssertionError: If any columns are missing
     """
-    return df.isnull().sum().to_dict()
+    missing = [c for c in cols if c not in df.columns]
+    assert not missing, f"Missing columns: {missing}"
 
 
-def check_duplicates(df: pd.DataFrame, subset: List[str] = None) -> int:
+def assert_non_empty(df: pd.DataFrame, name: str = "df") -> None:
     """
-    Check for duplicate rows
+    Assert that dataframe is not empty
     
     Args:
         df: DataFrame to check
-        subset: Columns to check for duplicates
+        name: Name for error message
         
-    Returns:
-        Number of duplicate rows
+    Raises:
+        AssertionError: If dataframe has 0 rows
     """
-    return df.duplicated(subset=subset).sum()
+    assert len(df) > 0, f"{name} has 0 rows"
 
 
-def check_data_types(df: pd.DataFrame) -> Dict[str, str]:
+def assert_unique_key(df: pd.DataFrame, key: str, *, allow_na: bool = False) -> None:
     """
-    Get data types of dataframe columns
+    Assert that key column has unique values
     
     Args:
         df: DataFrame to check
+        key: Column name to check for uniqueness
+        allow_na: Whether to allow NA values
         
-    Returns:
-        Dictionary with column names and data types
+    Raises:
+        AssertionError: If key has duplicates or unexpected NAs
     """
-    return df.dtypes.astype(str).to_dict()
+    if not allow_na:
+        assert df[key].notna().all(), f"{key} contains NA"
+    dup = df[key].duplicated(keep=False) & df[key].notna()
+    assert not dup.any(), f"{key} not unique; {dup.sum()} duplicate rows"
 
 
-def check_value_ranges(df: pd.DataFrame, column: str, min_val=None, max_val=None) -> Tuple[int, int]:
+def assert_in_range(s: pd.Series, lo=None, hi=None, name: str = "value") -> None:
     """
-    Check values outside expected range
+    Assert that series values are within specified range
     
     Args:
-        df: DataFrame to check
-        column: Column to check
-        min_val: Minimum expected value
-        max_val: Maximum expected value
+        s: Series to check
+        lo: Minimum value (inclusive)
+        hi: Maximum value (inclusive)
+        name: Name for error message
         
-    Returns:
-        Tuple of (below_min_count, above_max_count)
+    Raises:
+        AssertionError: If values are outside range
     """
-    below_min = 0
-    above_max = 0
-    
-    if min_val is not None:
-        below_min = (df[column] < min_val).sum()
-    if max_val is not None:
-        above_max = (df[column] > max_val).sum()
-    
-    return below_min, above_max
-
-
-def quality_report(df: pd.DataFrame) -> Dict:
-    """
-    Generate comprehensive quality report
-    
-    Args:
-        df: DataFrame to analyze
-        
-    Returns:
-        Dictionary with quality metrics
-    """
-    return {
-        'total_rows': len(df),
-        'total_columns': len(df.columns),
-        'missing_values': check_missing_values(df),
-        'duplicate_rows': df.duplicated().sum(),
-        'data_types': check_data_types(df)
-    }
+    x = s.dropna()
+    if lo is not None:
+        assert (x >= lo).all(), f"{name} below {lo}"
+    if hi is not None:
+        assert (x <= hi).all(), f"{name} above {hi}"

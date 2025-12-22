@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from bootcamp_data.io import read_orders_csv, write_parquet, read_parquet
 from bootcamp_data.config import make_paths
 from bootcamp_data.transforms import clean_orders
-from bootcamp_data.quality import quality_report, check_missing_values
+from bootcamp_data.quality import require_columns, assert_non_empty, assert_in_range
 
 
 def main():
@@ -32,40 +32,49 @@ def main():
     df_raw = read_orders_csv(raw_csv)
     print(f"   ✓ Loaded {len(df_raw)} rows")
     
-    # Step 2: Generate before report
-    print("\n2. Quality analysis BEFORE cleaning...")
-    before_report = quality_report(df_raw)
-    print(f"   Total rows: {before_report['total_rows']}")
-    print(f"   Total columns: {before_report['total_columns']}")
-    print(f"   Duplicate rows: {before_report['duplicate_rows']}")
-    print(f"   Missing values:")
-    for col, count in before_report['missing_values'].items():
-        if count > 0:
-            print(f"     - {col}: {count}")
+    # Step 2: Validate raw data
+    print("\n2. Validating raw data...")
+    try:
+        require_columns(df_raw, ['order_id', 'user_id', 'amount', 'quantity', 'created_at', 'status'])
+        assert_non_empty(df_raw, "Raw orders")
+        print(f"   ✓ All required columns present")
+        print(f"   ✓ Data is not empty")
+    except AssertionError as e:
+        print(f"   ✗ Validation failed: {e}")
+        return
     
-    # Step 3: Clean data
-    print("\n3. Cleaning data...")
+    # Step 3: Show before state
+    print("\n3. Data quality BEFORE cleaning...")
+    print(f"   Total rows: {len(df_raw)}")
+    print(f"   Missing values:")
+    for col in df_raw.columns:
+        missing = df_raw[col].isna().sum()
+        if missing > 0:
+            print(f"     - {col}: {missing}")
+    
+    # Step 4: Clean data
+    print("\n4. Cleaning data...")
     df_clean = clean_orders(df_raw)
     print(f"   ✓ Rows after cleaning: {len(df_clean)}")
     print(f"   ✓ Rows removed: {len(df_raw) - len(df_clean)}")
     
-    # Step 4: Generate after report
-    print("\n4. Quality analysis AFTER cleaning...")
-    after_report = quality_report(df_clean)
-    print(f"   Total rows: {after_report['total_rows']}")
+    # Step 5: Show after state
+    print("\n5. Data quality AFTER cleaning...")
+    print(f"   Total rows: {len(df_clean)}")
     print(f"   Missing values:")
-    for col, count in after_report['missing_values'].items():
-        if count > 0:
-            print(f"     - {col}: {count}")
+    for col in df_clean.columns:
+        missing = df_clean[col].isna().sum()
+        if missing > 0:
+            print(f"     - {col}: {missing}")
     
-    # Step 5: Save cleaned data
-    print("\n5. Saving cleaned data...")
+    # Step 6: Save cleaned data
+    print("\n6. Saving cleaned data...")
     output_path = paths.processed / "orders_clean.parquet"
     write_parquet(df_clean, output_path)
     print(f"   ✓ Saved to: {output_path}")
     
-    # Step 6: Generate missingness report
-    print("\n6. Generating missingness report...")
+    # Step 7: Generate missingness report
+    print("\n7. Generating missingness report...")
     missingness_report = create_missingness_report(df_raw, df_clean)
     report_path = paths.root / "reports" / "missingness_orders.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -74,11 +83,16 @@ def main():
         f.write(missingness_report)
     print(f"   ✓ Saved to: {report_path}")
     
-    # Step 7: Verify cleaned data
-    print("\n7. Verifying cleaned data...")
+    # Step 8: Verify cleaned data
+    print("\n8. Verifying cleaned data...")
     df_verify = read_parquet(output_path)
-    print(f"   ✓ Verified: {len(df_verify)} rows")
-    print(f"   ✓ Columns: {list(df_verify.columns)}")
+    try:
+        assert_non_empty(df_verify, "Cleaned orders")
+        print(f"   ✓ Verified: {len(df_verify)} rows")
+        print(f"   ✓ Columns: {list(df_verify.columns)}")
+    except AssertionError as e:
+        print(f"   ✗ Verification failed: {e}")
+        return
     
     print("\n" + "=" * 60)
     print("CLEANING PIPELINE COMPLETED SUCCESSFULLY!")
@@ -100,9 +114,6 @@ def create_missingness_report(df_before, df_after) -> str:
         Markdown formatted report
     """
     
-    missing_before = check_missing_values(df_before)
-    missing_after = check_missing_values(df_after)
-    
     report = "# Data Missingness Report\n\n"
     report += f"**Report Date:** {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
     
@@ -116,8 +127,8 @@ def create_missingness_report(df_before, df_after) -> str:
     report += "|--------|--------|-------|-------------|\n"
     
     for col in df_before.columns:
-        before = missing_before.get(col, 0)
-        after = missing_after.get(col, 0)
+        before = df_before[col].isna().sum()
+        after = df_after[col].isna().sum()
         improvement = before - after
         report += f"| {col} | {before} | {after} | {improvement} |\n"
     
@@ -125,8 +136,8 @@ def create_missingness_report(df_before, df_after) -> str:
     
     improvements = []
     for col in df_before.columns:
-        before = missing_before.get(col, 0)
-        after = missing_after.get(col, 0)
+        before = df_before[col].isna().sum()
+        after = df_after[col].isna().sum()
         if before > after:
             pct = ((before - after) / before * 100) if before > 0 else 0
             improvements.append(f"- **{col}**: Reduced missing values from {before} to {after} ({pct:.1f}% improvement)")
