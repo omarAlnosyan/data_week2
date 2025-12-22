@@ -78,9 +78,10 @@ def main() -> None:
         .pipe(add_missing_flags, cols=["amount", "quantity"])
     )
 
-    # 7. Validate amounts are in reasonable range (fail fast)
-    log.info("Validating amount ranges")
-    assert_in_range(orders_clean["amount"], lo=0, hi=100000, name="amount")
+    # 7. Validate amounts and quantities are non-negative (fail fast)
+    log.info("Validating ranges")
+    assert_in_range(orders_clean["amount"], lo=0, name="amount")
+    assert_in_range(orders_clean["quantity"], lo=0, name="quantity")
 
     # 8. Write processed outputs
     log.info("Writing processed outputs")
