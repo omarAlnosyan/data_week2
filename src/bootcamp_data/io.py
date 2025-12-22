@@ -26,6 +26,24 @@ def read_orders_csv(path: Path) -> pd.DataFrame:
     )
 
 
+def read_users_csv(path: Path) -> pd.DataFrame:
+    """
+    Read users from CSV file with custom NA values handling
+    
+    Args:
+        path: Path to CSV file
+        
+    Returns:
+        DataFrame with users data
+    """
+    return pd.read_csv(
+        path,
+        dtype={"user_id": "string"},
+        na_values=NA,
+        keep_default_na=True,
+    )
+
+
 def read_orders_json(path: str | Path) -> pd.DataFrame:
     """
     Read orders from JSON file

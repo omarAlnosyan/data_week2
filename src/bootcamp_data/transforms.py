@@ -3,7 +3,11 @@ Data transformation and cleaning functions
 """
 
 import pandas as pd
+import re
 from datetime import datetime
+
+# Regex pattern for multiple whitespace
+_ws = re.compile(r"\s+")
 
 
 def enforce_schema(df: pd.DataFrame) -> pd.DataFrame:
@@ -120,3 +124,54 @@ def add_missing_flags(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     for c in cols:
         out[f"{c}__isna"] = out[c].isna()
     return out
+
+
+def normalize_text(s: pd.Series) -> pd.Series:
+    """
+    Normalize text: strip, lowercase, collapse whitespace
+    
+    Args:
+        s: Series to normalize
+        
+    Returns:
+        Normalized series (Paid/PAID/paid → paid)
+    """
+    return (
+        s.astype("string")
+        .str.strip()
+        .str.casefold()
+        .str.replace(_ws, " ", regex=True)
+    )
+
+
+def apply_mapping(s: pd.Series, mapping: dict[str, str]) -> pd.Series:
+    """
+    Apply dictionary mapping to series values
+    
+    Args:
+        s: Series to map
+        mapping: Dictionary of value replacements
+        
+    Returns:
+        Series with mapped values (unmapped values stay unchanged)
+    """
+    return s.map(lambda x: mapping.get(x, x))
+
+
+def dedupe_keep_latest(df: pd.DataFrame, key_cols: list[str], ts_col: str) -> pd.DataFrame:
+    """
+    Deduplicate by keeping latest record based on timestamp
+    
+    Args:
+        df: DataFrame to deduplicate
+        key_cols: List of columns that define a unique record
+        ts_col: Timestamp column to sort by
+        
+    Returns:
+        Deduplicated DataFrame with latest records kept
+    """
+    return (
+        df.sort_values(ts_col)
+          .drop_duplicates(subset=key_cols, keep="last")
+          .reset_index(drop=True)
+    )

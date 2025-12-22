@@ -1,154 +1,93 @@
 """
-Day 2: Data Cleaning Pipeline
-Cleans orders data and generates quality reports
+Task 5: End-to-end cleaning pipeline
+Loads raw CSVs, validates, cleans, and writes processed outputs.
+Order of operations:
+  1. Load and verify columns + non-empty
+  2. Enforce schema (types)
+  3. Missingness report (observe problems)
+  4. Text normalization + flag creation
+  5. Write processed output
+Warning: Don't validate uniqueness before deduplication.
 """
-
-from pathlib import Path
+import logging
 import sys
-import pandas as pd
+from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from bootcamp_data.io import read_orders_csv, write_parquet, read_parquet
 from bootcamp_data.config import make_paths
-from bootcamp_data.transforms import clean_orders
-from bootcamp_data.quality import require_columns, assert_non_empty, assert_in_range
+from bootcamp_data.io import read_orders_csv, read_users_csv, write_parquet
+from bootcamp_data.transforms import (
+    enforce_schema,
+    missingness_report,
+    add_missing_flags,
+    normalize_text,
+    apply_mapping,
+)
+from bootcamp_data.quality import (
+    require_columns,
+    assert_non_empty,
+    assert_in_range,
+)
+
+log = logging.getLogger(__name__)
+
+# Root of the workspace
+ROOT = Path(__file__).parent.parent
 
 
-def main():
-    """Run the complete cleaning pipeline"""
-    
-    # Setup
-    root = Path(__file__).parent.parent
-    paths = make_paths(root)
-    
-    print("=" * 60)
-    print("DATA CLEANING PIPELINE - DAY 2")
-    print("=" * 60)
-    
-    # Step 1: Read raw data
-    print("\n1. Reading raw orders data...")
-    raw_csv = paths.raw / "orders.csv"
-    df_raw = read_orders_csv(raw_csv)
-    print(f"   ✓ Loaded {len(df_raw)} rows")
-    
-    # Step 2: Validate raw data
-    print("\n2. Validating raw data...")
-    try:
-        require_columns(df_raw, ['order_id', 'user_id', 'amount', 'quantity', 'created_at', 'status'])
-        assert_non_empty(df_raw, "Raw orders")
-        print(f"   ✓ All required columns present")
-        print(f"   ✓ Data is not empty")
-    except AssertionError as e:
-        print(f"   ✗ Validation failed: {e}")
-        return
-    
-    # Step 3: Show before state
-    print("\n3. Data quality BEFORE cleaning...")
-    print(f"   Total rows: {len(df_raw)}")
-    print(f"   Missing values:")
-    for col in df_raw.columns:
-        missing = df_raw[col].isna().sum()
-        if missing > 0:
-            print(f"     - {col}: {missing}")
-    
-    # Step 4: Clean data
-    print("\n4. Cleaning data...")
-    df_clean = clean_orders(df_raw)
-    print(f"   ✓ Rows after cleaning: {len(df_clean)}")
-    print(f"   ✓ Rows removed: {len(df_raw) - len(df_clean)}")
-    
-    # Step 5: Show after state
-    print("\n5. Data quality AFTER cleaning...")
-    print(f"   Total rows: {len(df_clean)}")
-    print(f"   Missing values:")
-    for col in df_clean.columns:
-        missing = df_clean[col].isna().sum()
-        if missing > 0:
-            print(f"     - {col}: {missing}")
-    
-    # Step 6: Save cleaned data
-    print("\n6. Saving cleaned data...")
-    output_path = paths.processed / "orders_clean.parquet"
-    write_parquet(df_clean, output_path)
-    print(f"   ✓ Saved to: {output_path}")
-    
-    # Step 7: Generate missingness report
-    print("\n7. Generating missingness report...")
-    missingness_report = create_missingness_report(df_raw, df_clean)
-    report_path = paths.root / "reports" / "missingness_orders.md"
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(report_path, 'w') as f:
-        f.write(missingness_report)
-    print(f"   ✓ Saved to: {report_path}")
-    
-    # Step 8: Verify cleaned data
-    print("\n8. Verifying cleaned data...")
-    df_verify = read_parquet(output_path)
-    try:
-        assert_non_empty(df_verify, "Cleaned orders")
-        print(f"   ✓ Verified: {len(df_verify)} rows")
-        print(f"   ✓ Columns: {list(df_verify.columns)}")
-    except AssertionError as e:
-        print(f"   ✗ Verification failed: {e}")
-        return
-    
-    print("\n" + "=" * 60)
-    print("CLEANING PIPELINE COMPLETED SUCCESSFULLY!")
-    print("=" * 60)
-    print(f"\nOutputs:")
-    print(f"  - Cleaned data: {output_path}")
-    print(f"  - Quality report: {report_path}")
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    p = make_paths(ROOT)
 
+    # 1. Load raw inputs
+    log.info("Loading raw inputs")
+    orders_raw = read_orders_csv(p.raw / "orders.csv")
+    users = read_users_csv(p.raw / "users.csv")
+    log.info("Rows: orders_raw=%s, users=%s", len(orders_raw), len(users))
 
-def create_missingness_report(df_before, df_after) -> str:
-    """
-    Create a markdown report of data missingness
-    
-    Args:
-        df_before: Raw dataframe
-        df_after: Cleaned dataframe
-        
-    Returns:
-        Markdown formatted report
-    """
-    
-    report = "# Data Missingness Report\n\n"
-    report += f"**Report Date:** {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-    
-    report += "## Summary\n"
-    report += f"- **Rows before cleaning:** {len(df_before)}\n"
-    report += f"- **Rows after cleaning:** {len(df_after)}\n"
-    report += f"- **Rows removed:** {len(df_before) - len(df_after)}\n\n"
-    
-    report += "## Missing Values Analysis\n\n"
-    report += "| Column | Before | After | Improvement |\n"
-    report += "|--------|--------|-------|-------------|\n"
-    
-    for col in df_before.columns:
-        before = df_before[col].isna().sum()
-        after = df_after[col].isna().sum()
-        improvement = before - after
-        report += f"| {col} | {before} | {after} | {improvement} |\n"
-    
-    report += "\n## Data Quality Improvements\n\n"
-    
-    improvements = []
-    for col in df_before.columns:
-        before = df_before[col].isna().sum()
-        after = df_after[col].isna().sum()
-        if before > after:
-            pct = ((before - after) / before * 100) if before > 0 else 0
-            improvements.append(f"- **{col}**: Reduced missing values from {before} to {after} ({pct:.1f}% improvement)")
-    
-    if improvements:
-        for imp in improvements:
-            report += imp + "\n"
-    else:
-        report += "- No missing values to clean\n"
-    
-    return report
+    # 2. Verify columns + non-empty (fast)
+    log.info("Verifying schema")
+    require_columns(orders_raw, ["order_id", "user_id", "amount", "quantity", "created_at", "status"])
+    require_columns(users, ["user_id", "country", "signup_date"])
+    assert_non_empty(orders_raw, "orders_raw")
+    assert_non_empty(users, "users")
+
+    # 3. Enforce schema (types)
+    log.info("Enforcing schema")
+    orders = enforce_schema(orders_raw)
+
+    # 4. Missingness report (do this early — before you "fix" missing values)
+    log.info("Generating missingness report")
+    rep = missingness_report(orders)
+    reports_dir = ROOT / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    rep_path = reports_dir / "missingness_orders.csv"
+    rep.to_csv(rep_path, index=True)
+    log.info("Wrote missingness report: %s", rep_path)
+
+    # 5. Text normalization + controlled mapping
+    log.info("Normalizing status values")
+    status_norm = normalize_text(orders["status"])
+    mapping = {"paid": "paid", "refund": "refund", "refunded": "refund"}
+    status_clean = apply_mapping(status_norm, mapping)
+
+    # 6. Add missing flags and create clean version
+    log.info("Adding missing flags")
+    orders_clean = (
+        orders
+        .assign(status_clean=status_clean)
+        .pipe(add_missing_flags, cols=["amount", "quantity"])
+    )
+
+    # 7. Validate amounts are in reasonable range (fail fast)
+    log.info("Validating amount ranges")
+    assert_in_range(orders_clean["amount"], lo=0, hi=100000, name="amount")
+
+    # 8. Write processed outputs
+    log.info("Writing processed outputs")
+    write_parquet(orders_clean, p.processed / "orders_clean.parquet")
+    write_parquet(users, p.processed / "users.parquet")
+    log.info("Wrote processed outputs to: %s", p.processed)
+    log.info("SUCCESS: End-to-end cleaning pipeline complete")
 
 
 if __name__ == "__main__":
