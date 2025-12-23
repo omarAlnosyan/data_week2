@@ -175,3 +175,99 @@ def dedupe_keep_latest(df: pd.DataFrame, key_cols: list[str], ts_col: str) -> pd
           .drop_duplicates(subset=key_cols, keep="last")
           .reset_index(drop=True)
     )
+
+
+# ============================================================================
+# DATETIME HELPERS (Day 3)
+# ============================================================================
+
+def parse_datetime(df: pd.DataFrame, col: str, *, utc: bool = True) -> pd.DataFrame:
+    """
+    Parse string column to datetime
+    
+    Args:
+        df: DataFrame to transform
+        col: Column name to parse
+        utc: Whether to convert to UTC timezone
+        
+    Returns:
+        DataFrame with parsed datetime column
+    """
+    dt = pd.to_datetime(df[col], errors="coerce", utc=utc)
+    return df.assign(**{col: dt})
+
+
+def add_time_parts(df: pd.DataFrame, ts_col: str) -> pd.DataFrame:
+    """
+    Extract time parts from datetime column (date, year, month, day_of_week, hour)
+    
+    Args:
+        df: DataFrame to transform
+        ts_col: Datetime column name
+        
+    Returns:
+        DataFrame with additional time columns (date, year, month, dow, hour)
+    """
+    ts = df[ts_col]
+    return df.assign(
+        date=ts.dt.date,
+        year=ts.dt.year,
+        month=ts.dt.to_period("M").astype("string"),
+        dow=ts.dt.day_name(),
+        hour=ts.dt.hour,
+    )
+
+
+# ============================================================================
+# OUTLIER HELPERS (Day 3)
+# ============================================================================
+
+def iqr_bounds(s: pd.Series, k: float = 1.5) -> tuple[float, float]:
+    """
+    Calculate IQR-based outlier bounds
+    
+    Args:
+        s: Series to analyze
+        k: IQR multiplier (default 1.5)
+        
+    Returns:
+        Tuple of (lower_bound, upper_bound)
+    """
+    x = s.dropna()
+    q1 = x.quantile(0.25)
+    q3 = x.quantile(0.75)
+    iqr = q3 - q1
+    return float(q1 - k * iqr), float(q3 + k * iqr)
+
+
+def winsorize(s: pd.Series, lo: float = 0.01, hi: float = 0.99) -> pd.Series:
+    """
+    Clip values at percentile bounds
+    
+    Args:
+        s: Series to winsorize
+        lo: Lower percentile (default 0.01)
+        hi: Upper percentile (default 0.99)
+        
+    Returns:
+        Winsorized Series (values clipped to percentile bounds)
+    """
+    x = s.dropna()
+    a, b = x.quantile(lo), x.quantile(hi)
+    return s.clip(lower=a, upper=b)
+
+
+def add_outlier_flag(df: pd.DataFrame, col: str, *, k: float = 1.5) -> pd.DataFrame:
+    """
+    Add boolean flag for outlier detection using IQR method
+    
+    Args:
+        df: DataFrame to transform
+        col: Column name to check for outliers
+        k: IQR multiplier (default 1.5)
+        
+    Returns:
+        DataFrame with new {col}__is_outlier boolean column
+    """
+    lo, hi = iqr_bounds(df[col], k=k)
+    return df.assign(**{f"{col}__is_outlier": (df[col] < lo) | (df[col] > hi)})
