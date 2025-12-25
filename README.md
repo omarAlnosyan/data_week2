@@ -1,92 +1,128 @@
-#  Bootcamp: Week 2
+# Data Engineering Bootcamp: Week 2
 
-**Complete ETL + EDA pipeline** 
+Complete ETL + EDA pipeline for learning data processing, cleaning, analytics, and statistical inference.
+
+**Note**: This uses synthetically generated data for bootcamp learning.
+
+---
+
+## Quick Start
+
+### 1. Setup
+```bash
+python -m venv env
+source env/Scripts/Activate.ps1  # Windows PowerShell
+
+pip install -r requirements.txt
+pip install -e .
+```
+
+### 2. Run Pipeline
+```bash
+python scripts/run_day2_clean.py
+python scripts/run_day3_build_analytics.py
+```
+
+### 3. Open EDA Notebook
+```bash
+jupyter notebook notebooks/eda.ipynb
+```
+
+---
+
+## What's Inside
+
+**Data Pipeline:**
+- Day 1-2: Load raw CSV, clean (duplicates, missing values, validation), export parquet
+- Day 3: Build analytics table with joins, time features, outlier handling
+- Day 4: EDA with 6 research questions, visualizations, bootstrap confidence intervals
+
+**Main Files:**
+- `src/bootcamp_data/` - Reusable modules (config, io, quality, transforms, joins, bootstrap)
+- `scripts/` - Day-by-day processing pipelines
+- `notebooks/eda.ipynb` - Interactive analysis (start here)
+- `reports/` - Exported figures and summary tables
+- `pyproject.toml` - All dependencies for reproducibility
+
+---
+
+## Key Findings from EDA
+
+- Revenue: UAE leads with $318.5K (42% of total)
+- Trends: Stable monthly revenue around $92-103K, no seasonality
+- Orders: Typical amount $200-$300 (mean: $268)
+- Refund rates: SA vs AE shows no significant difference (95% CI overlaps zero)
+- Data quality: 10% missing amounts (handled), 5% duplicates (removed)
+
+---
+
+## Tech Stack
+
+Python 3.11, pandas, numpy, pyarrow (Parquet), Plotly, Jupyter
 
 ---
 
 ## Project Structure
 
-
+```
 week 2/
 ├── data/
-│   ├── raw/                      # Raw CSV files (orders, users)
-│   ├── processed/                # Cleaned parquet outputs
-│   ├── cache/                    # Temporary files
-│   └── external/                 # External data
-├── src/bootcamp_data/            # Core processing package
-│   ├── config.py                 # Path management (Paths dataclass, make_paths)
-│   ├── io.py                     # CSV/Parquet I/O with custom NA handling
-│   ├── quality.py                # Assertion-based validation (require_columns, assert_unique_key, etc.)
-│   ├── transforms.py             # Schema enforcement, cleaning, datetime/outlier helpers, deduplication
-│   ├── joins.py                  # Safe left join with validation
-│   └── bootstrap.py              # Bootstrap resampling for 95% CIs
-├── scripts/                      # Daily processing pipelines
-│   ├── run_day1_load.py          # Initial data loading
-│   ├── run_day2_clean.py         # Cleaning + quality checks + missingness report
-│   ├── run_day3_build_analytics.py # Analytics table with joins and time features
-│   ├── day4_bootstrap_exercise.py  # Bootstrap SA vs AE refund rate comparison
-│   └── show_analytics_schema.py   # Display schema of analytics_table.parquet
+│   ├── raw/
+│   │   ├── orders.csv          (generated - 5,250 orders)
+│   │   └── users.csv           (generated - customer data)
+│   ├── processed/
+│   │   ├── orders_clean.parquet        (cleaned orders)
+│   │   └── analytics_table.parquet     (final analytics table with joins)
+│   ├── cache/                  (temporary files)
+│   └── external/               (external data sources)
+├── src/bootcamp_data/
+│   ├── __init__.py
+│   ├── config.py               (path management)
+│   ├── io.py                   (CSV/Parquet I/O)
+│   ├── quality.py              (data validation)
+│   ├── transforms.py           (cleaning, deduplication, outliers)
+│   ├── joins.py                (safe table joins)
+│   └── bootstrap.py            (bootstrap resampling for CI)
+├── scripts/
+│   ├── main.py                 (project entry point)
+│   ├── run_day2_clean.py       (clean raw data)
+│   ├── run_day3_build_analytics.py (build analytics table)
+│   ├── day4_bootstrap_exercise.py   (bootstrap examples)
+│   └── show_analytics_schema.py     (display schema)
 ├── notebooks/
-│   └── eda.ipynb                 # Complete EDA with 5 questions, 5 figures, 2 bootstrap CIs
+│   ├── eda.ipynb               (interactive EDA - 6 questions)
+│   └── schema_validation.ipynb (schema checks)
 ├── reports/
-│   ├── figures/                  # Exported PNG visualizations
+│   ├── figures/
 │   │   ├── revenue_by_country.png
 │   │   ├── revenue_trend_monthly.png
 │   │   ├── amount_hist_winsor.png
 │   │   ├── amount_by_country_facet.png
 │   │   └── revenue_by_country_map.png
-│   └── revenue_by_country.csv    # Summary table (AE: $318.5K, QA: $299K, KW: $290K, SA: $280K)
-├── pyproject.toml                # Package configuration
-├── requirements.txt              # Dependencies
-└── README.md                     # This file
+│   ├── revenue_by_country.csv  (summary metrics)
+│   └── missingness_orders.md   (data quality report)
+├── env/                        (virtual environment)
+├── bootcamp_data.egg-info/     (package info)
+├── pyproject.toml              (dependencies, package config)
+├── requirements.txt            (pip requirements)
+├── uv.lock                     (uv package lock file)
+└── README.md                   (this file)
 ```
-
-
-## Quick Start
-
-### 1. Setup Environment
-```bash
-# Create and activate virtual environment
-python -m venv env
-source env/Scripts/Activate.ps1  # Windows PowerShell
-# or: env\Scripts\activate.bat   # Windows cmd
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Install package in editable mode
-pip install -e .
-```
-
-### 3. Run EDA Notebook
-```bash
-# Quick: with uv (recommended)
-uv sync && uv run jupyter notebook notebooks/eda.ipynb
-
-# Traditional: with venv
-jupyter notebook notebooks/eda.ipynb
-```
-
-
-## Technology Stack
-
-- **Language**: Python 3.11
-- **Data Processing**: pandas, numpy
-- **Storage**: Apache Arrow (pyarrow, parquet)
-- **Visualization**: Plotly Express + kaleido (PNG export)
-- **Statistical Inference**: NumPy random sampling (bootstrap)
-- **Version Control**: Git + GitHub
 
 ---
 
-## Requirements
+## Questions Covered in EDA
 
-```
-pandas>=2.0
-numpy>=1.24
-pyarrow>=12.0
-plotly>=5.0
-kaleido>=0.2.1
-python-dotenv>=0.21
-```
+1. Which country generates most revenue?
+2. How does revenue trend over time?
+3. What does a typical order amount look like?
+4. Do SA and AE have different refund rates?
+5. How do order amounts differ between AE and SA?
+6. How are order amounts distributed across countries?
+
+Each question includes code, visualizations, and statistical interpretation.
+
+---
+
+*Complete pipeline: Load → Clean → Validate → Join → Visualize → Analyze*
 
