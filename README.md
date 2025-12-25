@@ -8,24 +8,22 @@ Complete ETL + EDA pipeline for learning data processing, cleaning, analytics, a
 
 ## Quick Start
 
-### 1. Setup
+### 1. Activate Virtual Environment
 ```bash
-python -m venv env
-source env/Scripts/Activate.ps1  # Windows PowerShell
-
-pip install -r requirements.txt
-pip install -e .
+env/Scripts/Activate.ps1  # Windows PowerShell
 ```
 
-### 2. Run Pipeline
+### 2. Open Notebook in Browser
+```bash
+jupyter lab notebooks/eda.ipynb
+```
+
+---
+
+### Optional: Run Data Pipeline
 ```bash
 python scripts/run_day2_clean.py
 python scripts/run_day3_build_analytics.py
-```
-
-### 3. Open EDA Notebook
-```bash
-jupyter notebook notebooks/eda.ipynb
 ```
 
 ---
