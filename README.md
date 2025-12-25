@@ -120,9 +120,5 @@ week 2/
 5. How do order amounts differ between AE and SA?
 6. How are order amounts distributed across countries?
 
-Each question includes code, visualizations, and statistical interpretation.
 
----
-
-*Complete pipeline: Load → Clean → Validate → Join → Visualize → Analyze*
 
