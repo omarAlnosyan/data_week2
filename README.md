@@ -1,12 +1,12 @@
-# Data Engineering Bootcamp: Week 2
+#  Bootcamp: Week 2
 
-**Complete ETL + EDA pipeline** combining data cleaning, analytics, visualization, and statistical inference across 4 days.
+**Complete ETL + EDA pipeline** 
 
 ---
 
 ## Project Structure
 
-```
+
 week 2/
 ├── data/
 │   ├── raw/                      # Raw CSV files (orders, users)
@@ -42,8 +42,6 @@ week 2/
 ```
 
 
----
-
 ## Quick Start
 
 ### 1. Setup Environment
@@ -60,37 +58,15 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-### 3. Running the EDA Notebook
-
-#### Option A: Using Jupyter (Interactive)
+### 3. Run EDA Notebook
 ```bash
-# Start Jupyter Lab/Notebook
-jupyter notebook notebooks/eda.ipynb
+# Quick: with uv (recommended)
+uv sync && uv run jupyter notebook notebooks/eda.ipynb
 
-# Or use JupyterLab for modern interface
-jupyter lab notebooks/eda.ipynb
-```
-
-#### Option B: Using UV (Recommended - Modern Python Package Manager)
-```bash
-# Sync dependencies from pyproject.toml
-uv sync
-
-# Run the notebook
-uv run jupyter notebook notebooks/eda.ipynb
-```
-
-#### Option C: Using Virtual Environment (Traditional)
-```bash
-# Activate your venv first
-source env/Scripts/Activate.ps1  # Windows PowerShell
-# or: env\Scripts\activate.bat   # Windows cmd
-
-# Then run Jupyter
+# Traditional: with venv
 jupyter notebook notebooks/eda.ipynb
 ```
 
----
 
 ## Technology Stack
 
