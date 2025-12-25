@@ -56,7 +56,7 @@ python scripts/run_day3_build_analytics.py
 
 ## Tech Stack
 
-Python 3.11, pandas, numpy, pyarrow (Parquet), Plotly, Jupyter
+Python 3.14, pandas, numpy, pyarrow (Parquet), Plotly, Jupyter
 
 ---
 
