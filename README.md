@@ -1,4 +1,4 @@
-# Data Engineering Bootcamp: Week 2
+#  Bootcamp: Week 2
 
 Complete ETL + EDA pipeline for learning data processing, cleaning, analytics, and statistical inference.
 
