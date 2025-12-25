@@ -2,10 +2,6 @@
 
 **Complete ETL + EDA pipeline** combining data cleaning, analytics, visualization, and statistical inference across 4 days.
 
-- **Days 1-2**: Data loading, quality checks, and comprehensive cleaning  
-- **Day 3**: Analytics table construction with datetime/outlier handling and safe joins  
-- **Day 4**: Exploratory data analysis with Plotly, bootstrap confidence intervals, and geographic visualizations  
-
 ---
 
 ## Project Structure
@@ -45,15 +41,6 @@ week 2/
 └── README.md                     # This file
 ```
 
----
-
-## Overview
-
-**Days 1-2**: Clean raw CSVs → Remove duplicates, standardize status, flag missing values → `orders_clean.parquet`
-
-**Day 3**: Build analytics table → Parse datetimes, extract time features, detect outliers, safe join users → `analytics_table.parquet` (17 cols, 5,250 rows)
-
-**Day 4**: EDA with 5 questions → 5 exported charts, 2 bootstrap CIs, data dictionary
 
 ---
 
@@ -73,23 +60,35 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-### 2. Run Day-by-Day Scripts
+### 3. Running the EDA Notebook
+
+#### Option A: Using Jupyter (Interactive)
 ```bash
-# Day 1-2: Load raw data and clean
-python scripts/run_day2_clean.py
-
-# Day 3: Build analytics table with joins
-python scripts/run_day3_build_analytics.py
-
-# Day 4: Run EDA notebook (or open in Jupyter)
+# Start Jupyter Lab/Notebook
 jupyter notebook notebooks/eda.ipynb
+
+# Or use JupyterLab for modern interface
+jupyter lab notebooks/eda.ipynb
 ```
 
-### 3. Key Outputs
-- **Cleaned orders**: `data/processed/orders_clean.parquet`
-- **Analytics table**: `data/processed/analytics_table.parquet`
-- **Revenue summary**: `reports/revenue_by_country.csv`
-- **5 Figures**: `reports/figures/*.png`
+#### Option B: Using UV (Recommended - Modern Python Package Manager)
+```bash
+# Sync dependencies from pyproject.toml
+uv sync
+
+# Run the notebook
+uv run jupyter notebook notebooks/eda.ipynb
+```
+
+#### Option C: Using Virtual Environment (Traditional)
+```bash
+# Activate your venv first
+source env/Scripts/Activate.ps1  # Windows PowerShell
+# or: env\Scripts\activate.bat   # Windows cmd
+
+# Then run Jupyter
+jupyter notebook notebooks/eda.ipynb
+```
 
 ---
 
@@ -101,7 +100,6 @@ jupyter notebook notebooks/eda.ipynb
 - **Visualization**: Plotly Express + kaleido (PNG export)
 - **Statistical Inference**: NumPy random sampling (bootstrap)
 - **Version Control**: Git + GitHub
-- **Documentation**: Markdown
 
 ---
 
@@ -116,15 +114,3 @@ kaleido>=0.2.1
 python-dotenv>=0.21
 ```
 
----
-
-## Notes
-
-- **Data Quality**: 10% missing amounts (handled with NaN flags), 5% duplicates (removed), mock data generation for learning
-- **Bootstrap Interpretation**: CI overlapping zero means inconclusive difference (not significantly different)
-- **Timezone**: All datetimes parsed to UTC
-- **Outliers**: Flagged via IQR method (k=1.5), clipped via 1st–99th percentile winsorization for viz
-
----
-
-*Complete bootcamp pipeline: Data Cleaning → Analytics Table → EDA → Statistical Inference*
